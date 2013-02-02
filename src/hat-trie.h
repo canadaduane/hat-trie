@@ -61,6 +61,8 @@ void            hattrie_iter_free      (hattrie_iter_t*);
 const char*     hattrie_iter_key       (hattrie_iter_t*, size_t* len);
 value_t*        hattrie_iter_val       (hattrie_iter_t*);
 
+hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t*, bool sorted, const char* prefix, size_t prefix_len);
+
 #ifdef __cplusplus
 }
 #endif

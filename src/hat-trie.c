@@ -63,10 +63,10 @@ static trie_node_t* alloc_trie_node(hattrie_t* T, node_ptr child)
     trie_node_t* node = malloc_or_die(sizeof(trie_node_t));
     node->flag = NODE_TYPE_TRIE;
     node->val  = 0;
-    
+
     /* pass T to allow custom allocator for trie. */
     HT_UNUSED(T); /* unused now */
-    
+
     size_t i;
     for (i = 0; i < NODE_CHILDS; ++i) node->xs[i] = child;
     return node;
@@ -120,7 +120,7 @@ static node_ptr hattrie_find(hattrie_t* T, const char **key, size_t *len)
     if (*len == 0) return parent;
 
     node_ptr node = hattrie_consume(&parent, key, len, 1);
-    
+
     /* if the trie node consumes value, use it */
     if (*node.flag & NODE_TYPE_TRIE) {
         if (!(node.t->flag & NODE_HAS_VAL)) {
@@ -131,10 +131,10 @@ static node_ptr hattrie_find(hattrie_t* T, const char **key, size_t *len)
 
     /* pure bucket holds only key suffixes, skip current char */
     if (*node.flag & NODE_TYPE_PURE_BUCKET) {
-        *key += 1; 
+        *key += 1;
         *len -= 1;
     }
-    
+
     /* do not scan bucket, it's not needed for this operation */
     return node;
 }
@@ -391,12 +391,12 @@ value_t* hattrie_tryget(hattrie_t* T, const char* key, size_t len)
     if (node.flag == NULL) {
         return NULL;
     }
-    
+
     /* if the trie node consumes value, use it */
     if (*node.flag & NODE_TYPE_TRIE) {
         return &node.t->val;
     }
-    
+
     return ahtable_tryget(node.b, key, len);
 }
 
@@ -411,7 +411,7 @@ int hattrie_del(hattrie_t* T, const char* key, size_t len)
     if (node.flag == NULL) {
         return -1;
     }
-    
+
     /* if consumed on a trie node, clear the value */
     if (*node.flag & NODE_TYPE_TRIE) {
         return hattrie_clrval(T, node);
@@ -421,10 +421,10 @@ int hattrie_del(hattrie_t* T, const char* key, size_t len)
     size_t m_old = ahtable_size(node.b);
     int ret =  ahtable_del(node.b, key, len);
     T->m -= (m_old - ahtable_size(node.b));
-    
+
     /* merge empty buckets */
     /*! \todo */
-    
+
     return ret;
 }
 
@@ -507,7 +507,7 @@ static void hattrie_iter_nextnode(hattrie_iter_t* i)
         /* push all child nodes from right to left */
         int j;
         for (j = NODE_MAXCHAR; j >= 0; --j) {
-            
+
             /* skip repeated pointers to hybrid bucket */
             if (j < NODE_MAXCHAR && node.t->xs[j].t == node.t->xs[j + 1].t) continue;
 
@@ -535,6 +535,11 @@ static void hattrie_iter_nextnode(hattrie_iter_t* i)
 
 hattrie_iter_t* hattrie_iter_begin(const hattrie_t* T, bool sorted)
 {
+	return hattrie_iter_with_prefix(T, sorted, NULL, 0);
+}
+
+hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t* T, bool sorted, const char* prefix, size_t prefix_len)
+{
     hattrie_iter_t* i = malloc_or_die(sizeof(hattrie_iter_t));
     i->T = T;
     i->sorted = sorted;
@@ -547,7 +552,7 @@ hattrie_iter_t* hattrie_iter_begin(const hattrie_t* T, bool sorted)
 
     i->stack = malloc_or_die(sizeof(hattrie_node_stack_t));
     i->stack->next   = NULL;
-    i->stack->node   = T->root;
+    i->stack->node   = hattrie_find((hattrie_t*)T, &prefix, &prefix_len);
     i->stack->c      = '\0';
     i->stack->level  = 0;
 
@@ -567,7 +572,6 @@ hattrie_iter_t* hattrie_iter_begin(const hattrie_t* T, bool sorted)
 
     return i;
 }
-
 
 void hattrie_iter_next(hattrie_iter_t* i)
 {
@@ -654,6 +658,3 @@ value_t* hattrie_iter_val(hattrie_iter_t* i)
 
     return ahtable_iter_val(i->i);
 }
-
-
-
