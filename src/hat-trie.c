@@ -180,6 +180,13 @@ void hattrie_free(hattrie_t* T)
     free(T);
 }
 
+
+size_t hattrie_size(hattrie_t* T)
+{
+    return T->m;
+}
+
+
 /* Perform one split operation on the given node with the given parent.
  */
 static void hattrie_split(hattrie_t* T, node_ptr parent, node_ptr node)
