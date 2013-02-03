@@ -689,8 +689,8 @@ const char* hattrie_iter_key(hattrie_iter_t* i, size_t* len)
     memcpy(i->key + i->level, subkey, sublen);
     i->key[i->level + sublen] = '\0';
 
-    *len = i->level + sublen;
-    return i->key;
+    *len = i->level + sublen - i->prefix_len;
+    return i->key + i->prefix_len;
 }
 
 
