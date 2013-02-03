@@ -529,11 +529,11 @@ static void hattrie_iter_nextnode(hattrie_iter_t* i)
         if (*node.flag & NODE_TYPE_PURE_BUCKET) {
             hattrie_iter_pushchar(i, level, c);
         }
-        else {
+        else if (level) {
             i->level = level - 1;
         }
-
         i->i = ahtable_iter_begin(node.b, i->sorted);
+
     }
 }
 
@@ -555,27 +555,25 @@ static void hattrie_iter_step(hattrie_iter_t* i)
     }
 }
 
-
 static bool hattrie_iter_prefix_not_match(hattrie_iter_t* i)
 {
     if (hattrie_iter_finished(i)) {
         return false; // can not advance the iter
     }
     if (i->level >= i->prefix_len) {
-        return false; // level deep, must match
+        return memcmp(i->key, i->prefix, i->prefix_len);
+    } else if (i->has_nil_key) {
+        return true; // subkey too short
     }
 
     size_t sublen;
     const char* subkey;
-    if (i->has_nil_key) {
-        sublen = 0;
-    } else {
-        subkey = ahtable_iter_key(i->i, &sublen);
-    }
+    subkey = ahtable_iter_key(i->i, &sublen);
     if (i->level + sublen < i->prefix_len) {
-        return true; // subkey too short, must not match
+        return true; // subkey too short
     }
-    return memcmp(i->prefix + i->level, subkey, (i->prefix_len - i->level));
+    return memcmp(i->key, i->prefix, i->level) ||
+           memcmp(subkey, i->prefix + i->level, (i->prefix_len - i->level));
 }
 
 
