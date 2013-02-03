@@ -5,4 +5,7 @@
 *.la
 config.*
 .DS_Store
+.deps
+.libs
+Makefile
 
