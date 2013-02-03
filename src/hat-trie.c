@@ -460,6 +460,11 @@ struct hattrie_iter_t_
     bool sorted;
     ahtable_iter_t* i;
     hattrie_node_stack_t* stack;
+
+    // subtree inside a table
+    // store remaining prefix for filtering nodes not matching it
+    char* prefix;
+    size_t prefix_len;
 };
 
 
@@ -557,6 +562,8 @@ hattrie_iter_t* hattrie_iter_begin(const hattrie_t* T, bool sorted)
 
 hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t* T, bool sorted, const char* prefix, size_t prefix_len)
 {
+    node_ptr node = hattrie_find((hattrie_t*)T, &prefix, &prefix_len);
+
     hattrie_iter_t* i = malloc_or_die(sizeof(hattrie_iter_t));
     i->T = T;
     i->sorted = sorted;
@@ -567,9 +574,17 @@ hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t* T, bool sorted, const 
     i->has_nil_key = false;
     i->nil_val     = 0;
 
+    i->prefix_len  = prefix_len;
+    if (prefix_len) {
+        i->prefix  = (char*)malloc_or_die(prefix_len);
+        memcpy(i->prefix, prefix, prefix_len);
+    } else {
+        i->prefix  = NULL;
+    }
+
     i->stack = malloc_or_die(sizeof(hattrie_node_stack_t));
     i->stack->next   = NULL;
-    i->stack->node   = hattrie_find((hattrie_t*)T, &prefix, &prefix_len);
+    i->stack->node   = node;
     i->stack->c      = '\0';
     i->stack->level  = 0;
 
@@ -612,6 +627,10 @@ void hattrie_iter_free(hattrie_iter_t* i)
         next = i->stack->next;
         free(i->stack);
         i->stack = next;
+    }
+
+    if (i->prefix_len) {
+        free(i->prefix);
     }
 
     free(i->key);
