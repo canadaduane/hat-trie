@@ -612,7 +612,7 @@ hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t* T, bool sorted, const 
     i->stack->level  = 0;
 
     hattrie_iter_step(i);
-    if (hattrie_iter_prefix_not_match(i)) {
+    if (i->prefix_len && hattrie_iter_prefix_not_match(i)) {
         hattrie_iter_next(i);
     }
 
@@ -635,7 +635,7 @@ void hattrie_iter_next(hattrie_iter_t* i)
         }
 
         hattrie_iter_step(i);
-    } while (hattrie_iter_prefix_not_match(i));
+    } while (i->prefix_len && hattrie_iter_prefix_not_match(i));
 }
 
 
