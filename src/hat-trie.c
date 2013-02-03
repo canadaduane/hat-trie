@@ -538,7 +538,9 @@ static void hattrie_iter_nextnode(hattrie_iter_t* i)
 }
 
 
-static void hattrie_iter_step(hattrie_iter_t* i) {
+// TODO pick a better name
+static void hattrie_iter_step(hattrie_iter_t* i)
+{
     while (((i->i == NULL || ahtable_iter_finished(i->i)) && !i->has_nil_key) &&
            i->stack != NULL ) {
 
@@ -551,6 +553,29 @@ static void hattrie_iter_step(hattrie_iter_t* i) {
         ahtable_iter_free(i->i);
         i->i = NULL;
     }
+}
+
+
+static bool hattrie_iter_prefix_not_match(hattrie_iter_t* i)
+{
+    if (hattrie_iter_finished(i)) {
+        return false; // can not advance the iter
+    }
+    if (i->level >= i->prefix_len) {
+        return false; // level deep, must match
+    }
+
+    size_t sublen;
+    const char* subkey;
+    if (i->has_nil_key) {
+        sublen = 0;
+    } else {
+        subkey = ahtable_iter_key(i->i, &sublen);
+    }
+    if (i->level + sublen < i->prefix_len) {
+        return true; // subkey too short, must not match
+    }
+    return memcmp(i->prefix + i->level, subkey, (i->prefix_len - i->level));
 }
 
 
@@ -589,6 +614,9 @@ hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t* T, bool sorted, const 
     i->stack->level  = 0;
 
     hattrie_iter_step(i);
+    if (hattrie_iter_prefix_not_match(i)) {
+        hattrie_iter_next(i);
+    }
 
     return i;
 }
@@ -596,18 +624,20 @@ hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t* T, bool sorted, const 
 
 void hattrie_iter_next(hattrie_iter_t* i)
 {
-    if (hattrie_iter_finished(i)) return;
+    do {
+        if (hattrie_iter_finished(i)) return;
 
-    if (i->i != NULL && !ahtable_iter_finished(i->i)) {
-        ahtable_iter_next(i->i);
-    }
-    else if (i->has_nil_key) {
-        i->has_nil_key = false;
-        i->nil_val = 0;
-        hattrie_iter_nextnode(i);
-    }
+        if (i->i != NULL && !ahtable_iter_finished(i->i)) {
+            ahtable_iter_next(i->i);
+        }
+        else if (i->has_nil_key) {
+            i->has_nil_key = false;
+            i->nil_val = 0;
+            hattrie_iter_nextnode(i);
+        }
 
-    hattrie_iter_step(i);
+        hattrie_iter_step(i);
+    } while (hattrie_iter_prefix_not_match(i));
 }
 
 
