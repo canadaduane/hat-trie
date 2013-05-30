@@ -50,10 +50,11 @@ value_t* hattrie_get (hattrie_t*, const char* key, size_t len);
  * exist. */
 value_t* hattrie_tryget (hattrie_t*, const char* key, size_t len);
 
-/** Find the longest common prefix between stored keys and the sample_key,
- *  and return the prefix size, or 0 if no stored key shares a common prefix with sample_key.
+/** Find a key, which is prefix of sample_key, and is longest among stored keys.
+ *  Returns pointer to its value, or NULL if not exist.
+ *  Found key length is stored in sample_len_ptr;
  */
-size_t hattrie_lcp_size (hattrie_t*, const char* sample_key, size_t len);
+value_t* hattrie_tryget_longest_match (hattrie_t*, const char* sample_key, size_t* sample_len);
 
 /** Delete a given key from trie. Returns 0 if successful or -1 if not found.
  */
@@ -68,6 +69,8 @@ void            hattrie_iter_free      (hattrie_iter_t*);
 const char*     hattrie_iter_key       (hattrie_iter_t*, size_t* len);
 value_t*        hattrie_iter_val       (hattrie_iter_t*);
 
+/** Note the hattrie_iter_key() for prefixed search gets the suffix instead of the whole key
+ */
 hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t*, bool sorted, const char* prefix, size_t prefix_len);
 
 #ifdef __cplusplus

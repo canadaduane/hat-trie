@@ -26,7 +26,7 @@ char** ds;
 
 hattrie_t* T;
 str_map* M;
-
+int have_error = 0;
 
 void setup()
 {
@@ -88,6 +88,7 @@ void test_hattrie_insert()
         if (*u != v) {
             fprintf(stderr, "[error] tally mismatch (reported: %lu, correct: %lu)\n",
                             *u, v);
+            have_error = 1;
         }
     }
 
@@ -99,6 +100,7 @@ void test_hattrie_insert()
         if (u) {
             fprintf(stderr, "[error] item %zu still found in trie after delete\n",
                     j);
+            have_error = 1;
         }
     }
 
@@ -131,9 +133,11 @@ void test_hattrie_iteration()
         if (*u != v) {
             if (v == 0) {
                 fprintf(stderr, "[error] incorrect iteration (%lu, %lu)\n", *u, v);
+                have_error = 1;
             }
             else {
                 fprintf(stderr, "[error] incorrect iteration tally (%lu, %lu)\n", *u, v);
+                have_error = 1;
             }
         }
 
@@ -147,6 +151,7 @@ void test_hattrie_iteration()
     if (count != M->m) {
         fprintf(stderr, "[error] iterated through %zu element, expected %zu\n",
                 count, M->m);
+        have_error = 1;
     }
 
     hattrie_iter_free(i);
@@ -193,6 +198,7 @@ void test_hattrie_sorted_iteration()
 
         if (prev_key != NULL && cmpkey(prev_key, prev_len, key, len) > 0) {
             fprintf(stderr, "[error] iteration is not correctly ordered.\n");
+            have_error = 1;
         }
 
         u = hattrie_iter_val(i);
@@ -201,9 +207,11 @@ void test_hattrie_sorted_iteration()
         if (*u != v) {
             if (v == 0) {
                 fprintf(stderr, "[error] incorrect iteration (%lu, %lu)\n", *u, v);
+                have_error = 1;
             }
             else {
                 fprintf(stderr, "[error] incorrect iteration tally (%lu, %lu)\n", *u, v);
+                have_error = 1;
             }
         }
 
@@ -217,6 +225,7 @@ void test_hattrie_sorted_iteration()
     if (count != M->m) {
         fprintf(stderr, "[error] iterated through %zu element, expected %zu\n",
                 count, M->m);
+        have_error = 1;        
     }
 
     hattrie_iter_free(i);
@@ -248,32 +257,45 @@ void test_trie_non_ascii()
 }
 
 
-void test_trie_lcp_size()
+void test_trie_tryget_longest_match()
 {
-    fprintf(stderr, "checking lcp_size... \n");
+    fprintf(stderr, "checking tryget_longest_match... \n");
 
-    value_t* u;
     hattrie_t* T = hattrie_create();
     char* txt1 = "hello world1";
     char* txt2 = "hello world2";
     char* txt3 = "hello";
-    size_t sz;
+    size_t len;
+    value_t* val;
 
-    u = hattrie_get(T, txt1, strlen(txt1));
-    *u = 1;
-    u = hattrie_get(T, txt2, strlen(txt2));
-    *u = 2;
-    u = hattrie_get(T, txt3, strlen(txt3));
-    *u = 3;
+    val = hattrie_get(T, txt1, strlen(txt1));
+    *val = 1;
+    val = hattrie_get(T, txt2, strlen(txt2));
+    *val = 2;
+    val = hattrie_get(T, txt3, strlen(txt3));
+    *val = 3;
 
-#define EXPECT(size) if (sz != size) fprintf(stderr, "expected %zu, but got %zu\n", (size_t)size, sz);
+#define EXPECT(val_check, length) \
+    if (!val_check) {\
+        fprintf(stderr, "[error] %d: val check failure\n", __LINE__);\
+        have_error = 1;\
+    }\
+    if (length != len) {\
+        fprintf(stderr, "[error] %d: expect len = %zu, but got %zu\n", __LINE__, (size_t)length, len);\
+        have_error = 1;\
+    }
 
-    sz = hattrie_lcp_size(T, "world", strlen("world"));
-    EXPECT(0);
-    sz = hattrie_lcp_size(T, "hell", 4);
-    EXPECT(4);
-    sz = hattrie_lcp_size(T, "hello Badi", strlen("hello Badi"));
-    EXPECT(strlen("hello "));
+    len = strlen("world");
+    val = hattrie_tryget_longest_match(T, "world", &len);
+    EXPECT(!val, 0);
+
+    len = strlen("hell");
+    val = hattrie_tryget_longest_match(T, "hell", &len);
+    EXPECT(!val, 0);
+
+    len = strlen("hello Badi");
+    val = hattrie_tryget_longest_match(T, "hello Badi", &len);
+    EXPECT(*val == 3, strlen("hello"));
 
     {
         char txt_buf[30];
@@ -281,12 +303,14 @@ void test_trie_lcp_size()
         const char* txt = "hello world8 also works";
         for (i = 0; i < 1000; i++) {
             sprintf(txt_buf, "hello world%ld", i);
-            u = hattrie_get(T, txt_buf, strlen(txt_buf));
-            *u = i;
+            val = hattrie_get(T, txt_buf, strlen(txt_buf));
+            *val = i;
         }
-        sz = hattrie_lcp_size(T, txt, strlen(txt));
-        EXPECT(strlen("hello world8"));
+        len = strlen(txt);
+        val = hattrie_tryget_longest_match(T, txt, &len);
+        EXPECT(*val == 8, strlen("hello world8"));
     }
+#undef EXPECT
 
     hattrie_free(T);
 }
@@ -296,7 +320,7 @@ void test_trie_lcp_size()
 int main()
 {
     test_trie_non_ascii();
-    test_trie_lcp_size();
+    test_trie_tryget_longest_match();
 
     setup();
     test_hattrie_insert();
@@ -308,5 +332,8 @@ int main()
     test_hattrie_sorted_iteration();
     teardown();
 
+    if (have_error) {
+        return -1;
+    }
     return 0;
 }

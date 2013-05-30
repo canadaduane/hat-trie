@@ -408,43 +408,60 @@ value_t* hattrie_tryget(hattrie_t* T, const char* key, size_t len)
 }
 
 
-size_t hattrie_lcp_size(hattrie_t* T, const char* key, size_t len)
+value_t* hattrie_tryget_longest_match(hattrie_t* T, const char* key, size_t* len_ptr)
 {
     /* similar to hattrie_consume(), note that node_ptr is not ptr... */
     unsigned char* k = (unsigned char*)key;
     node_ptr node = T->root;
+    value_t* val = NULL;
     size_t i;
     assert(*node.flag & NODE_TYPE_TRIE);
-    for (i = 0; i < len; i++, k++) {
+    for (i = 0; i < *len_ptr; i++, k++) {
         if (!(*node.flag & NODE_TYPE_TRIE)) break;
         node = node.t->xs[*k];
+        if (*node.flag & NODE_HAS_VAL) {
+            val = &node.t->val;
+        }
     }
-    if (i == len || i == 0) {
-        return i;
+    if (i == 0)
+        goto not_found;
+    if (i == *len_ptr) {
+        if (val)
+            return val;
+        else
+            goto not_found;
     }
-    len -= i;
 
     {
         char* rest_key = (char*)k;
+        size_t rest_len = *len_ptr - i;
+        size_t max_stored_len = 0;
         hattrie_iter_t* it = hattrie_iter_with_prefix(T, false, key, i);
-        size_t longest_common = 0;
         while(!hattrie_iter_finished(it)) {
-            size_t stored_key_len;
-            const char* stored_key = hattrie_iter_key(it, &stored_key_len);
-            size_t common;
-            for (common = 0; common < len; common++) {
-                if (stored_key[common] != rest_key[common]) {
-                    break;
+            size_t stored_len;
+            const char* stored_key = hattrie_iter_key(it, &stored_len);
+            if (stored_len > max_stored_len && stored_len <= rest_len) {
+                size_t j;
+                for (j = 0; j < stored_len; j++) {
+                    if (stored_key[j] != rest_key[j]) break;
                 }
-            }
-            if (common > longest_common) {
-                longest_common = common;
+                if (j == stored_len) { // stored key is prefix of rest_key
+                    max_stored_len = j;
+                    val = hattrie_iter_val(it);
+                }
             }
             hattrie_iter_next(it);
         }
         hattrie_iter_free(it);
-        return i + longest_common;
+        if (val) {
+            *len_ptr = i + max_stored_len;
+            return val;
+        }
     }
+
+not_found:
+    *len_ptr = 0;
+    return NULL;
 }
 
 
