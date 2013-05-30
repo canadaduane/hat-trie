@@ -248,9 +248,9 @@ void test_trie_non_ascii()
 }
 
 
-void test_trie_lcs_size()
+void test_trie_lcp_size()
 {
-    fprintf(stderr, "checking lcs_size... \n");
+    fprintf(stderr, "checking lcp_size... \n");
 
     value_t* u;
     hattrie_t* T = hattrie_create();
@@ -268,11 +268,11 @@ void test_trie_lcs_size()
 
 #define EXPECT(size) if (sz != size) fprintf(stderr, "expected %zu, but got %zu\n", (size_t)size, sz);
 
-    sz = hattrie_lcs_size(T, "world", strlen("world"));
+    sz = hattrie_lcp_size(T, "world", strlen("world"));
     EXPECT(0);
-    sz = hattrie_lcs_size(T, "hell", 4);
+    sz = hattrie_lcp_size(T, "hell", 4);
     EXPECT(4);
-    sz = hattrie_lcs_size(T, "hello Badi", strlen("hello Badi"));
+    sz = hattrie_lcp_size(T, "hello Badi", strlen("hello Badi"));
     EXPECT(strlen("hello "));
 
     {
@@ -284,7 +284,7 @@ void test_trie_lcs_size()
             u = hattrie_get(T, txt_buf, strlen(txt_buf));
             *u = i;
         }
-        sz = hattrie_lcs_size(T, txt, strlen(txt));
+        sz = hattrie_lcp_size(T, txt, strlen(txt));
         EXPECT(strlen("hello world8"));
     }
 
@@ -296,7 +296,7 @@ void test_trie_lcs_size()
 int main()
 {
     test_trie_non_ascii();
-    test_trie_lcs_size();
+    test_trie_lcp_size();
 
     setup();
     test_hattrie_insert();

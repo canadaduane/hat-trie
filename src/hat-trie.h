@@ -53,7 +53,7 @@ value_t* hattrie_tryget (hattrie_t*, const char* key, size_t len);
 /** Find the longest common prefix between stored keys and the sample_key,
  *  and return the prefix size, or 0 if no stored key shares a common prefix with sample_key.
  */
-size_t hattrie_lcs_size (hattrie_t*, const char* sample_key, size_t len);
+size_t hattrie_lcp_size (hattrie_t*, const char* sample_key, size_t len);
 
 /** Delete a given key from trie. Returns 0 if successful or -1 if not found.
  */

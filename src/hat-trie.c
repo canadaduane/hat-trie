@@ -408,7 +408,7 @@ value_t* hattrie_tryget(hattrie_t* T, const char* key, size_t len)
 }
 
 
-size_t hattrie_lcs_size(hattrie_t* T, const char* key, size_t len)
+size_t hattrie_lcp_size(hattrie_t* T, const char* key, size_t len)
 {
     /* similar to hattrie_consume(), note that node_ptr is not ptr... */
     unsigned char* k = (unsigned char*)key;
