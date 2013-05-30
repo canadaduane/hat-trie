@@ -187,7 +187,7 @@ void test_hattrie_sorted_iteration()
         ++count;
 
         key = hattrie_iter_key(i, &len);
-        
+
         /* memory for key may be changed on iter, copy it */
         strncpy(key_copy, key, len);
 
@@ -248,11 +248,55 @@ void test_trie_non_ascii()
 }
 
 
+void test_trie_lcs_size()
+{
+    fprintf(stderr, "checking lcs_size... \n");
+
+    value_t* u;
+    hattrie_t* T = hattrie_create();
+    char* txt1 = "hello world1";
+    char* txt2 = "hello world2";
+    char* txt3 = "hello";
+    size_t sz;
+
+    u = hattrie_get(T, txt1, strlen(txt1));
+    *u = 1;
+    u = hattrie_get(T, txt2, strlen(txt2));
+    *u = 2;
+    u = hattrie_get(T, txt3, strlen(txt3));
+    *u = 3;
+
+#define EXPECT(size) if (sz != size) fprintf(stderr, "expected %zu, but got %zu\n", (size_t)size, sz);
+
+    sz = hattrie_lcs_size(T, "world", strlen("world"));
+    EXPECT(0);
+    sz = hattrie_lcs_size(T, "hell", 4);
+    EXPECT(4);
+    sz = hattrie_lcs_size(T, "hello Badi", strlen("hello Badi"));
+    EXPECT(strlen("hello "));
+
+    {
+        char txt_buf[30];
+        long i;
+        const char* txt = "hello world8 also works";
+        for (i = 0; i < 1000; i++) {
+            sprintf(txt_buf, "hello world%ld", i);
+            u = hattrie_get(T, txt_buf, strlen(txt_buf));
+            *u = i;
+        }
+        sz = hattrie_lcs_size(T, txt, strlen(txt));
+        EXPECT(strlen("hello world8"));
+    }
+
+    hattrie_free(T);
+}
+
 
 
 int main()
 {
     test_trie_non_ascii();
+    test_trie_lcs_size();
 
     setup();
     test_hattrie_insert();
@@ -266,8 +310,3 @@ int main()
 
     return 0;
 }
-
-
-
-
-

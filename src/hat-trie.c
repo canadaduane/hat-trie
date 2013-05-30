@@ -408,6 +408,46 @@ value_t* hattrie_tryget(hattrie_t* T, const char* key, size_t len)
 }
 
 
+size_t hattrie_lcs_size(hattrie_t* T, const char* key, size_t len)
+{
+    /* similar to hattrie_consume(), note that node_ptr is not ptr... */
+    unsigned char* k = (unsigned char*)key;
+    node_ptr node = T->root;
+    size_t i;
+    assert(*node.flag & NODE_TYPE_TRIE);
+    for (i = 0; i < len; i++, k++) {
+        if (!(*node.flag & NODE_TYPE_TRIE)) break;
+        node = node.t->xs[*k];
+    }
+    if (i == len || i == 0) {
+        return i;
+    }
+    len -= i;
+
+    {
+        char* rest_key = (char*)k;
+        hattrie_iter_t* it = hattrie_iter_with_prefix(T, false, key, i);
+        size_t longest_common = 0;
+        while(!hattrie_iter_finished(it)) {
+            size_t stored_key_len;
+            const char* stored_key = hattrie_iter_key(it, &stored_key_len);
+            size_t common;
+            for (common = 0; common < len; common++) {
+                if (stored_key[common] != rest_key[common]) {
+                    break;
+                }
+            }
+            if (common > longest_common) {
+                longest_common = common;
+            }
+            hattrie_iter_next(it);
+        }
+        hattrie_iter_free(it);
+        return i + longest_common;
+    }
+}
+
+
 int hattrie_del(hattrie_t* T, const char* key, size_t len)
 {
     node_ptr parent = T->root;
@@ -545,7 +585,9 @@ static void hattrie_iter_nextnode(hattrie_iter_t* i)
 }
 
 
-// TODO pick a better name
+/** next non-nil-key node
+ * TODO pick a better name
+ */
 static void hattrie_iter_step(hattrie_iter_t* i)
 {
     while (((i->i == NULL || ahtable_iter_finished(i->i)) && !i->has_nil_key) &&

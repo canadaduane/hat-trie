@@ -46,10 +46,14 @@ size_t hattrie_size (hattrie_t*);
  */
 value_t* hattrie_get (hattrie_t*, const char* key, size_t len);
 
-
 /** Find a given key in the table, returning a NULL pointer if it does not
  * exist. */
 value_t* hattrie_tryget (hattrie_t*, const char* key, size_t len);
+
+/** Find the longest common prefix between stored keys and the sample_key,
+ *  and return the prefix size, or 0 if no stored key shares a common prefix with sample_key.
+ */
+size_t hattrie_lcs_size (hattrie_t*, const char* sample_key, size_t len);
 
 /** Delete a given key from trie. Returns 0 if successful or -1 if not found.
  */
@@ -71,5 +75,3 @@ hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t*, bool sorted, const ch
 #endif
 
 #endif
-
-
