@@ -257,7 +257,23 @@ void test_trie_non_ascii()
 }
 
 
-void test_trie_tryget_longest_match()
+typedef struct {
+    int size;
+    size_t lens[10];
+    value_t vals[10];
+} trie_walk_data_t;
+
+
+static int trie_walk_cb(const char* key __attribute__((unused)), size_t len, value_t* val, void* data) {
+    trie_walk_data_t* d = data;
+    d->lens[d->size] = len;
+    d->vals[d->size] = *val;
+    d->size++;
+    return hattrie_walk_continue;
+}
+
+
+void test_trie_walk()
 {
     fprintf(stderr, "checking tryget_longest_match... \n");
 
@@ -265,7 +281,6 @@ void test_trie_tryget_longest_match()
     char* txt1 = "hello world1";
     char* txt2 = "hello world2";
     char* txt3 = "hello";
-    size_t len;
     value_t* val;
 
     val = hattrie_get(T, txt1, strlen(txt1));
@@ -275,41 +290,22 @@ void test_trie_tryget_longest_match()
     val = hattrie_get(T, txt3, strlen(txt3));
     *val = 3;
 
-#define EXPECT(val_check, length) \
-    if (!val_check) {\
-        fprintf(stderr, "[error] %d: val check failure\n", __LINE__);\
-        have_error = 1;\
-    }\
-    if (length != len) {\
-        fprintf(stderr, "[error] %d: expect len = %zu, but got %zu\n", __LINE__, (size_t)length, len);\
+#define EXPECT(check) \
+    if (!(check)) {\
+        fprintf(stderr, "[error] %s:%d: expect failure\n", __FILE__, __LINE__);\
         have_error = 1;\
     }
 
-    len = strlen("world");
-    val = hattrie_tryget_longest_match(T, "world", &len);
-    EXPECT(!val, 0);
-
-    len = strlen("hell");
-    val = hattrie_tryget_longest_match(T, "hell", &len);
-    EXPECT(!val, 0);
-
-    len = strlen("hello Badi");
-    val = hattrie_tryget_longest_match(T, "hello Badi", &len);
-    EXPECT(*val == 3, strlen("hello"));
-
-    {
-        char txt_buf[30];
-        long i;
-        const char* txt = "hello world8 also works";
-        for (i = 0; i < 1000; i++) {
-            sprintf(txt_buf, "hello world%ld", i);
-            val = hattrie_get(T, txt_buf, strlen(txt_buf));
-            *val = i;
-        }
-        len = strlen(txt);
-        val = hattrie_tryget_longest_match(T, txt, &len);
-        EXPECT(*val == 8, strlen("hello world8"));
-    }
+    trie_walk_data_t data = {
+        .size = 0
+    };
+    char* txt = "hello world20";
+    hattrie_walk(T, txt, strlen(txt), &data, trie_walk_cb);
+    EXPECT(data.size == 2);
+    EXPECT(data.lens[0] = strlen(txt3));
+    EXPECT(data.vals[0] == 3);
+    EXPECT(data.lens[1] = strlen(txt2));
+    EXPECT(data.vals[1] == 2);
 #undef EXPECT
 
     hattrie_free(T);
@@ -320,7 +316,7 @@ void test_trie_tryget_longest_match()
 int main()
 {
     test_trie_non_ascii();
-    test_trie_tryget_longest_match();
+    test_trie_walk();
 
     setup();
     test_hattrie_insert();

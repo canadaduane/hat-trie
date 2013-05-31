@@ -50,11 +50,17 @@ value_t* hattrie_get (hattrie_t*, const char* key, size_t len);
  * exist. */
 value_t* hattrie_tryget (hattrie_t*, const char* key, size_t len);
 
-/** Find a key, which is prefix of sample_key, and is longest among stored keys.
- *  Returns pointer to its value, or NULL if not exist.
- *  Found key length is stored in sample_len_ptr;
+/** hattrie_walk callback signature */
+typedef int (*hattrie_walk_cb)(const char* key, size_t len, value_t* val, void* user_data);
+
+/** hattrie_walk callback return values, controls whether should stop the walk or not */
+#define hattrie_walk_stop 0
+#define hattrie_walk_continue 1
+
+/** Find stored keys which are prefices of key, and invoke callback for every found key and val.
+ *  The invocation order is: short key to long key.
  */
-value_t* hattrie_tryget_longest_match (hattrie_t*, const char* sample_key, size_t* sample_len);
+void hattrie_walk (hattrie_t*, const char* key, size_t len, void* user_data, hattrie_walk_cb);
 
 /** Delete a given key from trie. Returns 0 if successful or -1 if not found.
  */

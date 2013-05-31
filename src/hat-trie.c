@@ -408,60 +408,57 @@ value_t* hattrie_tryget(hattrie_t* T, const char* key, size_t len)
 }
 
 
-value_t* hattrie_tryget_longest_match(hattrie_t* T, const char* key, size_t* len_ptr)
-{
-    /* similar to hattrie_consume(), note that node_ptr is not ptr... */
+void hattrie_walk (hattrie_t* T, const char* key, size_t len, void* user_data, hattrie_walk_cb cb) {
     unsigned char* k = (unsigned char*)key;
     node_ptr node = T->root;
-    value_t* val = NULL;
-    size_t i;
-    assert(*node.flag & NODE_TYPE_TRIE);
-    for (i = 0; i < *len_ptr; i++, k++) {
-        if (!(*node.flag & NODE_TYPE_TRIE)) break;
+    size_t i, j;
+    ahtable_iter_t* it;
+
+    /* go down until a bucket is reached */
+    for (i = 0; i < len; i++, k++) {
+        if (!(*node.flag & NODE_TYPE_TRIE))
+            break;
         node = node.t->xs[*k];
         if (*node.flag & NODE_HAS_VAL) {
-            val = &node.t->val;
+            if (hattrie_walk_stop == cb(key, i, &node.t->val, user_data))
+                return;
         }
     }
-    if (i == 0)
-        goto not_found;
-    if (i == *len_ptr) {
-        if (val)
-            return val;
-        else
-            goto not_found;
+    if (i == len)
+        return;
+
+    assert(i);
+    if (*node.flag & NODE_TYPE_HYBRID_BUCKET) {
+        i--;
+        k--;
+    } else {
+        assert(*node.flag & NODE_TYPE_PURE_BUCKET);
     }
 
-    {
-        char* rest_key = (char*)k;
-        size_t rest_len = *len_ptr - i;
-        size_t max_stored_len = 0;
-        hattrie_iter_t* it = hattrie_iter_with_prefix(T, false, key, i);
-        while(!hattrie_iter_finished(it)) {
-            size_t stored_len;
-            const char* stored_key = hattrie_iter_key(it, &stored_len);
-            if (stored_len > max_stored_len && stored_len <= rest_len) {
-                size_t j;
-                for (j = 0; j < stored_len; j++) {
-                    if (stored_key[j] != rest_key[j]) break;
-                }
-                if (j == stored_len) { // stored key is prefix of rest_key
-                    max_stored_len = j;
-                    val = hattrie_iter_val(it);
-                }
+    /* dict order ensured short => long */
+    it = ahtable_iter_begin(node.b, true);
+    for(; !ahtable_iter_finished(it); ahtable_iter_next(it)) {
+        size_t stored_len;
+        unsigned char* stored_key = (unsigned char*)ahtable_iter_key(it, &stored_len);
+        int matched = 1;
+        if (stored_len + i > len) {
+            continue;
+        }
+        for (j = 0; j < stored_len; j++) {
+            if (stored_key[j] != k[j]) {
+                matched = 0;
+                break;
             }
-            hattrie_iter_next(it);
         }
-        hattrie_iter_free(it);
-        if (val) {
-            *len_ptr = i + max_stored_len;
-            return val;
+        if (matched) {
+            value_t* val = ahtable_iter_val(it);
+            if (hattrie_walk_stop == cb(key, i + stored_len, val, user_data)) {
+                ahtable_iter_free(it);
+                return;
+            }
         }
     }
-
-not_found:
-    *len_ptr = 0;
-    return NULL;
+    ahtable_iter_free(it);
 }
 
 
