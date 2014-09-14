@@ -112,8 +112,9 @@ static inline int hattrie_clrval(hattrie_t *T, node_ptr n)
 }
 
 /* find node in trie */
-static node_ptr hattrie_find(hattrie_t* T, const char **key, size_t *len)
+static node_ptr hattrie_find(hattrie_t* T, const char **key, size_t *len, int* found)
 {
+    *found = 1;
     node_ptr parent = T->root;
     assert(*parent.flag & NODE_TYPE_TRIE);
 
@@ -124,7 +125,7 @@ static node_ptr hattrie_find(hattrie_t* T, const char **key, size_t *len)
     /* if the trie node consumes value, use it */
     if (*node.flag & NODE_TYPE_TRIE) {
         if (!(node.t->flag & NODE_HAS_VAL)) {
-            node.flag = NULL;
+            *found = 0;
         }
         return node;
     }
@@ -394,8 +395,9 @@ value_t* hattrie_get(hattrie_t* T, const char* key, size_t len)
 value_t* hattrie_tryget(hattrie_t* T, const char* key, size_t len)
 {
     /* find node for given key */
-    node_ptr node = hattrie_find(T, &key, &len);
-    if (node.flag == NULL) {
+    int found;
+    node_ptr node = hattrie_find(T, &key, &len, &found);
+    if (!found) {
         return NULL;
     }
 
@@ -468,8 +470,9 @@ int hattrie_del(hattrie_t* T, const char* key, size_t len)
     assert(*parent.flag & NODE_TYPE_TRIE);
 
     /* find node for deletion */
-    node_ptr node = hattrie_find(T, &key, &len);
-    if (node.flag == NULL) {
+    int found;
+    node_ptr node = hattrie_find(T, &key, &len, &found);
+    if (!found) {
         return -1;
     }
 
@@ -648,7 +651,8 @@ hattrie_iter_t* hattrie_iter_begin(const hattrie_t* T, bool sorted)
 
 hattrie_iter_t* hattrie_iter_with_prefix(const hattrie_t* T, bool sorted, const char* prefix, size_t prefix_len)
 {
-    node_ptr node = hattrie_find((hattrie_t*)T, &prefix, &prefix_len);
+    int found;
+    node_ptr node = hattrie_find((hattrie_t*)T, &prefix, &prefix_len, &found);
 
     hattrie_iter_t* i = malloc_or_die(sizeof(hattrie_iter_t));
     i->T = T;
