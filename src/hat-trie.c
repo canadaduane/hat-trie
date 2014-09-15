@@ -127,6 +127,8 @@ static node_ptr hattrie_find(hattrie_t* T, const char **key, size_t *len, int* f
         if (!(node.t->flag & NODE_HAS_VAL)) {
             *found = 0;
         }
+        *key += 1;
+        *len -= 1;
         return node;
     }
 
