@@ -17,6 +17,8 @@
  */
 size_t text_clean(char* text)
 {
+  if (*text == '\0') return 0;
+
   char* read;
   char* write = text;
   uint8_t join_lines = false,

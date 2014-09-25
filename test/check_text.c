@@ -22,6 +22,14 @@ void test_text_clean()
 
   fprintf(stderr, "cleaning text ... ");
 
+  char text0[] = "";
+
+  len = text_clean(text0);
+  if (len != 0) {
+    fprintf(stderr, "[error] string should be zero length (%lu)\n", len);
+  }
+
+
   char text1[] = "  And be-\nhold Jarom\nsaid, \"Great!\n\" ";
   char text1_goal[] = "and behold jarom said great.";
 
