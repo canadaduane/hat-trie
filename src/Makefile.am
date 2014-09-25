@@ -5,7 +5,8 @@ libhat_trie_la_SOURCES = common.h \
                          ahtable.h        ahtable.c \
                          hat-trie.h       hat-trie.c \
                          misc.h           misc.c \
-                         murmurhash3.h    murmurhash3.c
+                         murmurhash3.h    murmurhash3.c \
+                         text.h           text.c
 
-pkginclude_HEADERS = hat-trie.h ahtable.h common.h pstdint.h
+pkginclude_HEADERS = hat-trie.h ahtable.h text.h common.h pstdint.h
 
