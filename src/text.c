@@ -20,7 +20,7 @@ size_t text_clean(char* text)
   char* read;
   char* write = text;
   uint8_t join_lines = false,
-          just_added_space = false,
+          just_added_space = true,   // prevent prefix spaces
           just_added_period = false;
   for (read=text; *read; read++) {
     char c = *read;
@@ -114,9 +114,6 @@ void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, size_t text
   size_t buffer_offset = NGRAM_BUFFER_SIZE - suffix_len - 1;
   char* buffer_pre = buffer + buffer_offset;
   strcpy(buffer_pre, suffix);
-
-  // skip any spaces at beginning
-  while(*head == ' ' && head < text+text_len) head++;
 
   do {
     if (*tail == ' ' || *tail == '.' || tail >= head+text_len) {

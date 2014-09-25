@@ -22,7 +22,7 @@ void test_text_clean()
 
   fprintf(stderr, "cleaning text ... ");
 
-  char text1[] = "And be-\nhold Jarom\nsaid, \"Great!\n\" ";
+  char text1[] = "  And be-\nhold Jarom\nsaid, \"Great!\n\" ";
   char text1_goal[] = "and behold jarom said great.";
 
   len = text_clean(text1);
