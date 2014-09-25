@@ -18,12 +18,15 @@ void teardown()
 
 void test_text_clean()
 {
+  size_t len;
+
   fprintf(stderr, "cleaning text ... ");
 
   char text1[] = "And be-\nhold Jarom\nsaid, \"Great!\n\" ";
   char text1_goal[] = "and behold jarom said great.";
 
-  text_clean(text1);
+  len = text_clean(text1);
+  text1[len] = '\0';
   if (strcmp(text1, text1_goal) != 0) {
     fprintf(stderr, "[error] strings do not match: \"%s\" <=> \"%s\"\n", text1, text1_goal);
   }
@@ -31,7 +34,8 @@ void test_text_clean()
   char text2[] = "A word. For you .  and you  ..";
   char text2_goal[] = "a word.for you.and you.";
 
-  text_clean(text2);
+  len = text_clean(text2);
+  text2[len] = '\0';
   if (strcmp(text2, text2_goal) != 0) {
     fprintf(stderr, "[error] strings do not match: \"%s\" <=> \"%s\"\n", text2, text2_goal);
   }
@@ -48,7 +52,7 @@ void test_add_ngrams()
 
   char text0[] = "";
 
-  add_ngrams(trie, 3, text0, 0);
+  add_ngrams(trie, 3, text0, strlen(text0), 0);
 
   if (hattrie_size(trie) > 0)
     fprintf(stderr, "[error] trie should be empty after adding nothing\n");
@@ -56,7 +60,7 @@ void test_add_ngrams()
 
   char text1[] = "and what and that and what you say";
 
-  add_ngrams(trie, 3, text1, 0);
+  add_ngrams(trie, 3, text1, strlen(text1), 0);
 
   value = hattrie_tryget(trie, "and", strlen("and"));
   if (value == NULL)
@@ -91,7 +95,7 @@ void test_add_ngrams()
 
   char text2[] = "hickory dickory";
 
-  add_ngrams(trie, 3, text2, 0);
+  add_ngrams(trie, 3, text2, strlen(text2), 0);
 
   value = hattrie_tryget(trie, "hickory", strlen("hickory"));
   if (value == NULL)
@@ -114,7 +118,7 @@ void test_add_ngrams()
 
   char text3[] = "millenium falcon";
 
-  add_ngrams(trie, 1, text3, 0);
+  add_ngrams(trie, 1, text3, strlen(text3), 0);
 
   value = hattrie_tryget(trie, "millenium", strlen("millenium"));
   if (value == NULL)
@@ -146,7 +150,7 @@ void test_add_ngrams_with_suffix()
 
   char text1[] = "and what and that and what you say";
 
-  add_ngrams_with_suffix(trie, 3, text1, suffix, 0);
+  add_ngrams_with_suffix(trie, 3, text1, strlen(text1), suffix, 0);
 
 
   value = hattrie_tryget(trie, "and", strlen("and"));
@@ -176,7 +180,7 @@ void test_add_ngrams_incr_existing_keys_only()
 
   char text1[] = "one two three four";
 
-  add_ngrams(trie, 2, text1, 0);
+  add_ngrams(trie, 2, text1, strlen(text1), 0);
 
   value = hattrie_tryget(trie, "one two", strlen("one two"));
   if (value == NULL)
@@ -189,7 +193,7 @@ void test_add_ngrams_incr_existing_keys_only()
 
   // this time, 'one' and 'two' and 'one two' should increment, while
   // 'two millenium', 'millenium falcon', and 'millenium' and 'falcon' are ignored
-  add_ngrams(trie, 2, text2, 1);
+  add_ngrams(trie, 2, text2, strlen(text2), 1);
 
   value = hattrie_tryget(trie, "one", strlen("one"));
   if (value == NULL)
@@ -235,10 +239,10 @@ void test_add_ngrams_with_suffix_incr_existing_keys_only()
   fprintf(stderr, "adding ngrams with suffixes but incrementing only existing keys ... ");
 
   char text1[] = "one two three four";
-  add_ngrams_with_suffix(trie, 2, text1, "-book1", 0);
+  add_ngrams_with_suffix(trie, 2, text1, strlen(text1), "-book1", 0);
 
   char text2[] = "one two millenium falcon";
-  add_ngrams_with_suffix(trie, 2, text2, "-book2", 1);
+  add_ngrams_with_suffix(trie, 2, text2, strlen(text2), "-book2", 1);
 
 
  value = hattrie_tryget(trie, "falcon", strlen("falcon"));

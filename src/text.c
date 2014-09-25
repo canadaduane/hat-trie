@@ -60,17 +60,15 @@ size_t text_clean(char* text)
   }
   // erase space at end of text
   if (just_added_space) write--;
-  // terminate the string at its new length
-  *write = '\0';
 
   // Return the new length of the string
   return (size_t)(write - text);
 }
 
-void add_ngrams(hattrie_t* trie, int upto_n, char* text, uint8_t incr_existing_keys_only)
+void add_ngrams(hattrie_t* trie, int upto_n, char* text, size_t text_len, uint8_t incr_existing_keys_only)
 {
   char blank_suffix[] = "\0";
-  add_ngrams_with_suffix(trie, upto_n, text, blank_suffix, incr_existing_keys_only);
+  add_ngrams_with_suffix(trie, upto_n, text, text_len, blank_suffix, incr_existing_keys_only);
 }
 
 static inline void incr_value(
@@ -101,7 +99,7 @@ static inline void incr_value(
 
 }
 
-void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, char* suffix, uint8_t incr_existing_keys_only)
+void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, size_t text_len, char* suffix, uint8_t incr_existing_keys_only)
 {
   char* head = text;
   char* tail = text;
@@ -109,7 +107,7 @@ void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, char* suffi
   char* next_tail = text;
   int word_count = 0;
 
-  if (*text == '\0') return;
+  if (text_len == 0) return;
 
   char buffer[NGRAM_BUFFER_SIZE];
   size_t suffix_len = strlen(suffix);
@@ -118,10 +116,10 @@ void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, char* suffi
   strcpy(buffer_pre, suffix);
 
   // skip any spaces at beginning
-  while(*head == ' ') head++;
+  while(*head == ' ' && head < text+text_len) head++;
 
   do {
-    if (*tail == ' ' || *tail == '.' || *tail == '\0') {
+    if (*tail == ' ' || *tail == '.' || tail >= head+text_len) {
       word_count++;
       if (word_count == 1 || upto_n == 1) {
         next_head = next_tail = tail + 1;
@@ -152,7 +150,7 @@ void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, char* suffi
 
   // add the 1..(upto_n-1) sized ngrams at the tail
   if (upto_n > 1) {
-    while(*head) {
+    while(head < text+text_len) {
       if(*head == ' ' || *head == '.') {
         incr_value(trie, buffer, buffer_pre,
           head + 1, tail - head - 1, suffix_len,
