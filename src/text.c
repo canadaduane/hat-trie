@@ -15,16 +15,16 @@
  *
  * Spaces indicate word boundaries, while periods indicate sentence boundaries.
  */
-size_t text_clean(char* text)
+size_t text_clean(char* text, size_t len)
 {
-  if (*text == '\0') return 0;
+  if (len == 0) return 0;
 
   char* read;
   char* write = text;
   uint8_t join_lines = false,
           just_added_space = true,   // prevent prefix spaces
           just_added_period = false;
-  for (read=text; *read; read++) {
+  for (read=text; read<text+len; read++) {
     char c = *read;
     if (c >= 'A' && c <= 'Z') {
       // Change upper case to lowercase
@@ -70,7 +70,7 @@ size_t text_clean(char* text)
 void add_ngrams(hattrie_t* trie, int upto_n, char* text, size_t text_len, uint8_t incr_existing_keys_only)
 {
   char blank_suffix[] = "\0";
-  add_ngrams_with_suffix(trie, upto_n, text, text_len, blank_suffix, incr_existing_keys_only);
+  add_ngrams_with_suffix(trie, upto_n, text, text_len, blank_suffix, 0, incr_existing_keys_only);
 }
 
 static inline void incr_value(
@@ -101,7 +101,7 @@ static inline void incr_value(
 
 }
 
-void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, size_t text_len, char* suffix, uint8_t incr_existing_keys_only)
+void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, size_t text_len, char* suffix, size_t suffix_len, uint8_t incr_existing_keys_only)
 {
   char* head = text;
   char* tail = text;
@@ -112,10 +112,9 @@ void add_ngrams_with_suffix(hattrie_t* trie, int upto_n, char* text, size_t text
   if (text_len == 0) return;
 
   char buffer[NGRAM_BUFFER_SIZE];
-  size_t suffix_len = strlen(suffix);
   size_t buffer_offset = NGRAM_BUFFER_SIZE - suffix_len - 1;
   char* buffer_pre = buffer + buffer_offset;
-  strcpy(buffer_pre, suffix);
+  memcpy(buffer_pre, suffix, suffix_len);
 
   do {
     if (*tail == ' ' || *tail == '.' || tail >= head+text_len) {
