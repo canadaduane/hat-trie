@@ -23,15 +23,20 @@ int main()
     const size_t m_high = 500; // maximum length of each string
     char x[501];
 
+    clock_t t0, t;
+
     size_t i, m;
+    fprintf(stderr, "generating %u strings ... ", (unsigned int)n);
+    t0 = clock();
     for (i = 0; i < n; ++i) {
         m = m_low + rand() % (m_high - m_low);
         randstr(x, m);
         *hattrie_get(T, x, m) = 1;
     }
+    t = clock();
+    fprintf(stderr, "finished. (%0.2f seconds)\n", (double) (t - t0) / (double) CLOCKS_PER_SEC);
 
     hattrie_iter_t* it;
-    clock_t t0, t;
     const size_t repetitions = 100;
     size_t r;
 
